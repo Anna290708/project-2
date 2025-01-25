@@ -8,6 +8,8 @@ class Product(TimeStampModel):
     price=models.FloatField()
     currency=models.CharField(max_length=255, choices=Currency.choices, default=Currency.GEL)
     quantity= models.PositiveIntegerField()
+    def __str__(self):
+        return self.name
 
 class Review(TimeStampModel):
     user=models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True,blank=True, related_name='reviews')
@@ -15,7 +17,13 @@ class Review(TimeStampModel):
     content=models.TextField()
     rating=models.PositiveIntegerField(validators=[MaxValueValidator(5)])
 
+    def __str__(self):
+        return self.user
+
 class ProductTag(TimeStampModel):
     name=models.CharField(max_length=255)
     Product=models.ManyToManyField('products.Product', related_name='product_tags')
+
+    def __str__(self):
+        return self.name
 
