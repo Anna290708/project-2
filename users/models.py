@@ -7,7 +7,7 @@ class User(AbstractUser):
     phone_number=models.CharField(unique=True, max_length=32)
 
     USERNAME_FIELD='email'
-    REQUIRED_FIELDS=['username']
+    REQUIRED_FIELDS=['username', 'phone_number']
 
     def __str__(self):
         return self.email
