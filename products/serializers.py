@@ -11,30 +11,27 @@ class CartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1)
 
-class ReviewSerializer(serializers.Serializer):
+class ReviewSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
-    content = serializers.CharField()
-    rating = serializers.IntegerField()
+
+    class Meta:
+        model = Review
+        fields = ['product_id', 'content', 'rating']
+
     def validate_product_id(self, value):
-        try:
-            Product.objects.get(id=value)
-        except Product.DoesNotExist:
+        if not Product.objects.filter(id=value).exists():
             raise serializers.ValidationError("Invalid product_id. Product does not exist.")
         return value
+
     def validate_rating(self, value):
         if value < 1 or value > 5:
             raise serializers.ValidationError("Rating must be between 1 and 5.")
         return value
+
     def create(self, validated_data):
-        product = Product.objects.get(id=validated_data['product_id'])
+        product = Product.objects.get(id=validated_data.pop('product_id'))
         user = self.context['request'].user
-        review = Review.objects.create(
-            product=product,
-            user=user,
-            content=validated_data['content'],
-            rating=validated_data['rating'],
-        )
-        return review
+        return Review.objects.create(product=product, user=user, **validated_data)
     
 class ProductTagSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
