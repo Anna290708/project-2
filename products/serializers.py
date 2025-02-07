@@ -19,6 +19,7 @@ class CartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1)
 
+<<<<<<< HEAD
     def validate_product_id(self, value):
         #vamowmebt aris tuara bazashi es produqti
         if not Product.objects.filter(id=value).exists():
@@ -36,6 +37,17 @@ class ReviewSerializer(serializers.Serializer):
         try:
             Product.objects.get(id=value)
         except Product.DoesNotExist:
+=======
+class ReviewSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['product_id', 'content', 'rating']
+
+    def validate_product_id(self, value):
+        if not Product.objects.filter(id=value).exists():
+>>>>>>> 859a6da604bc5dfa33291e864af507a5aff7e930
             raise serializers.ValidationError("Invalid product_id. Product does not exist.")
         return value
 
@@ -46,8 +58,9 @@ class ReviewSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        product = Product.objects.get(id=validated_data['product_id'])
+        product = Product.objects.get(id=validated_data.pop('product_id'))
         user = self.context['request'].user
+<<<<<<< HEAD
         #vqmnit axal mimoxilvas arsebuli momxmareblistvis da produqtistvis
         review = Review.objects.create(
             product=product,
@@ -58,6 +71,10 @@ class ReviewSerializer(serializers.Serializer):
         return review
 
 
+=======
+        return Review.objects.create(product=product, user=user, **validated_data)
+    
+>>>>>>> 859a6da604bc5dfa33291e864af507a5aff7e930
 class ProductTagSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
     tag_name = serializers.CharField()
