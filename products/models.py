@@ -13,7 +13,7 @@ class Product(TimeStampModel):
 
 class Review(TimeStampModel):
     user=models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True,blank=True, related_name='reviews')
-    Product=models.ForeignKey('products.Product', on_delete=models.CASCADE, related_name='reviews')
+    product=models.ForeignKey('products.Product', on_delete=models.CASCADE, related_name='reviews')
     content=models.TextField()
     rating=models.PositiveIntegerField(validators=[MaxValueValidator(5)])
 
