@@ -1,7 +1,12 @@
 from rest_framework import serializers 
 from products.models import *
 
- 
+     
+class ProductTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ProductTag
+        fields=['id', 'name']
+
 
 class ProductSerializer(serializers.ModelSerializer):
     name = serializers.CharField() 
@@ -36,7 +41,37 @@ class ReviewSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return Review.objects.create(product=product, user=user, **validated_data)
 
+class ProductSerializer(serializers.ModelSerializer):
+    name = serializers.CharField() 
+    description = serializers.CharField() 
+    price = serializers.FloatField() 
+    currency = serializers.ChoiceField(choices=['GEL', 'USD', 'EURO']) 
+    quantity = serializers.IntegerField()
+   
+    reviews = ReviewSerializer(many=True, read_only=True)
+    tag_ids = serializers.PrimaryKeyRelatedField(
+        source="tags",
+        queryset=ProductTag.objects.all(),
+        many=True,
+        write_only=True
+    )
+    tags = ProductTagSerializer(many=True, read_only=True)
+    class Meta:
+        model = Product  
+        fields = ['name', 'description', 'price', 'currency', 'quantity', 'tag_ids', 'tags','reviews'] 
 
+    def create(self, validated_data):
+        tags = validated_data.pop("tags", [])
+        product = Product.objects.create(**validated_data)
+        product.tags.set(tags)
+        return product
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop("tags", None)
+        if tags is not None:
+            instance.tags.set(tags) 
+        return super().update(instance, validated_data)
+                              
 
 class FavoriteProductSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -88,41 +123,8 @@ class CartSerializer(serializers.ModelSerializer):
 
         return cart
     
-class ProductTagSerializer(serializers.ModelSerializer): 
 
-    product_id = serializers.IntegerField(write_only=True) 
-
-    tag_name = serializers.CharField() 
-    class Meta: 
-
-        model = ProductTag 
-
-        fields = ['id', 'product_id', 'tag_name'] 
-
-    def validate_product_id(self, value): 
-
-        #produqtis arsebobis shemowmeba aucilebelia, rata ar davamatot tags ararsebul produqtze 
-
-        if not Product.objects.filter(id=value).exists(): 
-
-            raise serializers.ValidationError("Invalid product_id. Product does not exist.") 
-
-        return value 
-    def validate_tag_name(self, value): 
-
-        #tag-is saxeli ar sheidzleba iyos carieli da unda iyso maqsimum 50 simbolo 
-        if not value.strip(): 
-            raise serializers.ValidationError("Tag name cannot be empty.") 
-
-        if len(value) > 50: 
-
-            raise serializers.ValidationError("Tag name is too long. Maximum 50 characters allowed.") 
-
-        return value 
-    def create(self, validated_data): 
-
-        product = Product.objects.get(id=validated_data['product_id']) 
-
-        tag, created = ProductTag.objects.get_or_create(product=product, tag_name=validated_data['tag_name']) 
-
-        return tag 
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ProductImage
+        fields=['id', 'image', 'product']
