@@ -24,7 +24,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['product_id', 'content', 'rating']
+        fields = ['id', 'user_id', 'product_id', 'content', 'rating']
 
     def validate_product_id(self, value):
         if not Product.objects.filter(id=value).exists():
@@ -39,6 +39,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         product = Product.objects.get(id=validated_data.pop('product_id'))
         user = self.context['request'].user
+        existing_reviews=Review.objects.filter(product=product , user=user)
+        if existing_reviews.exists():
+            raise serializers.ValidationError('you already reviewed this product')
+            
         return Review.objects.create(product=product, user=user, **validated_data)
 
 class ProductSerializer(serializers.ModelSerializer):

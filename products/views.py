@@ -7,26 +7,39 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from products.pagination import *
-
+from products.filters import *
+from rest_framework.exceptions import PermissionDenied
 class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet): 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     filter_backends=[DjangoFilterBackend, SearchFilter]
-    filterset_fields=['categories','price']
+    filterset_class= ProductFilter
     search_fields=['name', 'description']
     pagination_class=ProductPagination
 
-class ReviewViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
+class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     filter_backends=[DjangoFilterBackend]
-    filterset_fields=['rating']
+    filterset_class=ProductReview
 
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
+    
+    def perform_update(self, serializer):
+        review=self.get_object()
+        if review.user != self.request.user:
+            raise PermissionDenied('You cant change this review')
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        if instance.user!=self.request.user:
+            raise PermissionDenied('You cant change this review')
+        instance.delete()
+
 
 
 class FavoriteProductViewSet(ListModelMixin, CreateModelMixin, DestroyModelMixin, GenericViewSet):

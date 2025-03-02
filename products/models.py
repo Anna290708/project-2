@@ -24,11 +24,10 @@ class Review(TimeStampModel):
     content=models.TextField()
     rating=models.PositiveIntegerField(validators=[MaxValueValidator(5)])
 
-    def __str__(self):
-        return self.user
+    # class Meta:
+    #     unique_togeter=['product', 'user']
 
-
-
+  
 class Cart(TimeStampModel):
     products=models.ManyToManyField('products.Product', related_name='carts')
     user=models.OneToOneField('users.User' ,related_name='cart', on_delete=models.CASCADE)
@@ -41,4 +40,20 @@ class FavoriteProduct(TimeStampModel):
 class ProductImage(TimeStampModel):
     image=models.ImageField(upload_to='products/')
     product=models.ForeignKey('products.Product',related_name='images', on_delete=models.CASCADE)
+
+
+class CartItem(TimeStampModel, models.Model):
+    cart=models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    Product=models.ForeignKey(Product, related_name='cart_items', on_delete=models.CASCADE)
+    quantity=models.PositiveBigIntegerField(default=1)
+    price_at_time_of_additions=models.FloatField()
+
+    def __str__ (self):
+        return f'{self.Product.name} - {self.quantity}'
+    
+    def get_total_price(self, obj):
+        return obj.total_price()
+    
+    
+
 
