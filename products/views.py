@@ -70,3 +70,23 @@ class ProductImageViewSet(ListModelMixin, CreateModelMixin, DestroyModelMixin, G
 
     def get_queryset(self):
         return self.queryset.filter(product__id=self.kwargs.get('product_pk'))
+    
+class CartItemViewSet(ModelViewSet):
+    queryset=CartItem.objects.all()
+    serializer_class=CartItemSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(cart__user=self.request.user)
+    
+    def perform_destroy(self, instance):
+        if instance.cart.user != self.request.user:
+            raise PermissionDenied('you do not have permission to delete')
+        instance.delete()
+
+    def perform_update(self, serializer):
+        instance= self.get_object()
+        if instance.cart.user != self.request.user:
+            raise PermissionDenied('you do not have permission to update')
+        serializer.save()
+    
