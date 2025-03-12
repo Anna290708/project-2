@@ -15,7 +15,7 @@ class ProductSerializer(serializers.ModelSerializer):
     currency = serializers.ChoiceField(choices=['GEL', 'USD', 'EURO']) 
     quantity = serializers.IntegerField()
     class Meta:
-        model = Product  # Specify the model
+        model = Product  
         fields = ['name', 'description', 'price', 'currency', 'quantity'] 
 
 

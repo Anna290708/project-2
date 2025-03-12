@@ -131,3 +131,8 @@ AUTH_USER_MODEL = 'users.User'
 
 MEDIA_URL='media/'
 MEDIA_ROOT=BASE_DIR/'media'
+
+PASSWORD_HASHERS=[
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    ]
