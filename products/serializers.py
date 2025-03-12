@@ -117,19 +117,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         return obj.get_total_price()
 
     def create(self, validated_data):
-        # Extract product_id from the validated data
-        product = validated_data.pop('product_id')  # Get the product instance from the product_id
-        
-        # Ensure the cart is created or fetched for the current user
+        product = validated_data.pop('product_id')  
         user = self.context['request'].user
         cart, created = Cart.objects.get_or_create(user=user)
         
-        # Create the CartItem and set product as a ForeignKey instance, not just the id
         cart_item = CartItem.objects.create(
-            cart=cart,  # Set the cart reference
-            product=product,  # Set the actual product instance, not the product_id
-            quantity=validated_data.get('quantity', 1),  # Default to 1 if quantity is not provided
-            price_at_time_of_additions=product.price  # Use the product's price at the time of addition
+            cart=cart,  
+            product=product, 
+            quantity=validated_data.get('quantity', 1),  
+            price_at_time_of_additions=product.price 
         )
         return cart_item
 
