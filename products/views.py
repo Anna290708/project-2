@@ -1,6 +1,8 @@
 from products.models import * 
 from products.serializers import * 
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.generics import *
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin,UpdateModelMixin, DestroyModelMixin
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
@@ -9,14 +11,23 @@ from rest_framework.filters import SearchFilter
 from products.pagination import *
 from products.filters import *
 from rest_framework.exceptions import PermissionDenied
-class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet): 
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
+
+class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends=[DjangoFilterBackend, SearchFilter]
-    filterset_class= ProductFilter
-    search_fields=['name', 'description']
-    pagination_class=ProductPagination
+    permission_classes = [IsAuthenticated] 
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = ProductFilter
+    search_fields = ['name', 'description']
+    pagination_class = ProductPagination
+    throttle_classes = [AnonRateThrottle]
+    
+    @action(detail=False, methods=['GET'])
+    def my_products(self, request):
+        products = self.queryset.filter(user=request.user)
+        serializer = self.get_serializer(products, many=True)
+        return Response(serializer.data)
 
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
@@ -24,6 +35,7 @@ class ReviewViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends=[DjangoFilterBackend]
     filterset_class=ProductReview
+    throttle_classes=[AnonRateThrottle]
 
 
     def get_queryset(self):
@@ -46,7 +58,8 @@ class FavoriteProductViewSet(ListModelMixin, CreateModelMixin, DestroyModelMixin
     queryset = FavoriteProduct.objects.all()
     serializer_class = FavoriteProductSerializer
     permission_classes = [IsAuthenticated]
-
+    throttle_classes=[ScopedRateThrottle]
+    trottle_scope='likes'
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
 

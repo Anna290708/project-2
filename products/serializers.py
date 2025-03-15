@@ -6,19 +6,6 @@ class ProductTagSerializer(serializers.ModelSerializer):
     class Meta:
         model=ProductTag
         fields=['id', 'name']
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    name = serializers.CharField() 
-    description = serializers.CharField() 
-    price = serializers.FloatField() 
-    currency = serializers.ChoiceField(choices=['GEL', 'USD', 'EURO']) 
-    quantity = serializers.IntegerField()
-    class Meta:
-        model = Product  
-        fields = ['name', 'description', 'price', 'currency', 'quantity'] 
-
-
 class ReviewSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
 
@@ -44,6 +31,40 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('you already reviewed this product')
             
         return Review.objects.create(product=product, user=user, **validated_data)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    name = serializers.CharField()
+    description = serializers.CharField()
+    price = serializers.FloatField()
+    currency = serializers.ChoiceField(choices=['GEL', 'USD', 'EURO'])
+    quantity = serializers.IntegerField()
+    reviews = ReviewSerializer(many=True, read_only=True)
+    tag_ids = serializers.PrimaryKeyRelatedField(
+        source="tags",
+        queryset=ProductTag.objects.all(),
+        many=True,
+        write_only=True
+    )
+    tags = ProductTagSerializer(many=True, read_only=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)  
+
+    class Meta:
+        model = Product
+        fields = ['name', 'description', 'price', 'currency', 'quantity', 'tag_ids', 'tags', 'reviews', 'user']  
+
+    def create(self, validated_data):
+        tags = validated_data.pop("tags", [])
+        product = Product.objects.create(user=self.context['request'].user, **validated_data)  
+        product.tags.set(tags)
+        return product
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop("tags", None)
+        if tags is not None:
+            instance.tags.set(tags)
+        return super().update(instance, validated_data)
+
 
 class ProductSerializer(serializers.ModelSerializer):
     name = serializers.CharField() 
