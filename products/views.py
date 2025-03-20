@@ -24,11 +24,11 @@ class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, Updat
     pagination_class = ProductPagination
     throttle_classes = [AnonRateThrottle]
     
-    # @action(detail=False, methods=['GET'])
-    # def my_products(self, request):
-    #     products = self.queryset.filter(user=request.user)
-    #     serializer = self.get_serializer(products, many=True)
-    #     return Response(serializer.data)
+    @action(detail=False, methods=['GET'])
+    def my_products(self, request,):
+        products = self.queryset.filter(user=request.user)
+        serializer = self.get_serializer(products, many=True)
+        return Response(serializer.data)
 
 
 
