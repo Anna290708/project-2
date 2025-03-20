@@ -12,45 +12,35 @@ from products.pagination import *
 from products.filters import *
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
+from .permissions import *
 
 class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated,IsObjectOwnerOrReadOnly] 
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = ProductFilter
     search_fields = ['name', 'description']
     pagination_class = ProductPagination
     throttle_classes = [AnonRateThrottle]
     
-    @action(detail=False, methods=['GET'])
-    def my_products(self, request):
-        products = self.queryset.filter(user=request.user)
-        serializer = self.get_serializer(products, many=True)
-        return Response(serializer.data)
+    # @action(detail=False, methods=['GET'])
+    # def my_products(self, request):
+    #     products = self.queryset.filter(user=request.user)
+    #     serializer = self.get_serializer(products, many=True)
+    #     return Response(serializer.data)
+
+
 
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsObjectOwnerOrReadOnly]
     filter_backends=[DjangoFilterBackend]
     filterset_class=ProductReview
     throttle_classes=[AnonRateThrottle]
-
-
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
-    
-    def perform_update(self, serializer):
-        review=self.get_object()
-        if review.user != self.request.user:
-            raise PermissionDenied('You cant change this review')
-        serializer.save()
-    
-    def perform_destroy(self, instance):
-        if instance.user!=self.request.user:
-            raise PermissionDenied('You cant change this review')
-        instance.delete()
 
 
 
@@ -87,19 +77,8 @@ class ProductImageViewSet(ListModelMixin, CreateModelMixin, DestroyModelMixin, G
 class CartItemViewSet(ModelViewSet):
     queryset=CartItem.objects.all()
     serializer_class=CartItemSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsObjectOwnerOrReadOnly]
 
     def get_queryset(self):
         return self.queryset.filter(cart__user=self.request.user)
-    
-    def perform_destroy(self, instance):
-        if instance.cart.user != self.request.user:
-            raise PermissionDenied('you do not have permission to delete')
-        instance.delete()
-
-    def perform_update(self, serializer):
-        instance= self.get_object()
-        if instance.cart.user != self.request.user:
-            raise PermissionDenied('you do not have permission to update')
-        serializer.save()
     
