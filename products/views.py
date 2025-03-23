@@ -13,6 +13,7 @@ from products.filters import *
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from .permissions import *
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class ProductViewSet(ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Product.objects.all()
@@ -70,9 +71,12 @@ class ProductImageViewSet(ListModelMixin, CreateModelMixin, DestroyModelMixin, G
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes=[MultiPartParser, FormParser]
 
     def get_queryset(self):
         return self.queryset.filter(product__id=self.kwargs.get('product_pk'))
+    
+    
     
 class CartItemViewSet(ModelViewSet):
     queryset=CartItem.objects.all()

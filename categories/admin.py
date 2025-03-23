@@ -8,3 +8,5 @@ class CategoryInline(admin.TabularInline):
 @admin.register(Category)
 class categoryAdmin(admin.ModelAdmin):
     inlines=[CategoryInline]
+    
+admin.site.register(CategoryImage)
