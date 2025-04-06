@@ -1,7 +1,6 @@
 from rest_framework import serializers 
 from products.models import *
 
-     
 class ProductTagSerializer(serializers.ModelSerializer):
     class Meta:
         model=ProductTag
