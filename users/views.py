@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.mixins import *
 from rest_framework.viewsets import GenericViewSet
-from users.models import User
+from users.models import *
 from users.serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import mixins, viewsets,status, response
@@ -9,11 +9,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password
 from users.permissions import IsOwnerOrReadOnly  
-from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
-from django.core.validators import ValidationError
-
+# from django.contrib.auth import get_user_model
+# from django.shortcuts import get_object_or_404
+# from rest_framework.decorators import api_view
+# from django.core.validators import ValidationError
+import random
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
-
+from django.utils import timezone
 class UserViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset=User.objects.all()
     permission_classes=[IsAuthenticated]
@@ -30,6 +30,25 @@ class UserViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
 class RegisterView(CreateModelMixin, GenericViewSet):
     queryset=User.objects.all()
     serializer_class=RegisterSerializer
+
+    def create(self,request, *args, **kwargs):
+        serializer=self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user=serializer.save()
+            self.send_verification_code(user)
+            return Response({'detail': 'User registered successfully.Verification code sent to email'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def send_verification_code(self, user):
+        code=str(random.randint(100000, 999999))
+        
+        EmailVerificationCode.objects.update_or_create(
+            user=user,
+            defaults={'code': code, 'created_at': timezone.now()}
+        )
+        subject='Your verification code'
+        message=f'Hello {user.username}, your verification code is {code} '
+        send_mail(subject, message, 'no-reply@example.com', [user.email])
 
 class ProfileViewSet(mixins.RetrieveModelMixin,
                       mixins.UpdateModelMixin,

@@ -28,6 +28,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self,validated_data):
         validated_data.pop('password2')
         user=User.objects.create_user(**validated_data)
+        user.is_active=False
+        user.save()
         return user
         
         
@@ -58,7 +60,7 @@ class passwordResetConfirmSerializer(serializers.Serializer):
         except(User.DoesNotExist, ValueError, TypeError, KeyError):
             raise serializers.ValidationError({'message':' momxmarebeli ver moidzebna'})
         
-        token=attrs['token ']
+        token=attrs['token']
         if not default_token_generator.check_token(user, token):
             raise serializers.ValidationError({'message':"araswori an vadagasuli tokeni"})
         attrs['user']=user
@@ -69,4 +71,3 @@ class passwordResetConfirmSerializer(serializers.Serializer):
         user.save()
 
 
-    
