@@ -9,10 +9,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password
 from users.permissions import IsOwnerOrReadOnly  
-# from django.contrib.auth import get_user_model
-# from django.shortcuts import get_object_or_404
-# from rest_framework.decorators import api_view
-# from django.core.validators import ValidationError
 import random
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
@@ -22,6 +18,7 @@ from drf_yasg import openapi
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
+from datetime import timedelta
 class UserViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset=User.objects.all()
     permission_classes=[IsAuthenticated]
@@ -49,6 +46,32 @@ class RegisterView(CreateModelMixin, GenericViewSet):
         subject='Your verification code'
         message=f'Hello {user.username}, your verification code is {code} '
         send_mail(subject, message, 'no-reply@example.com', [user.email])
+
+    @action(detail=False, methods=['post'], url_path='resend_code', serializer_class=EmailCodeResendSerializer)
+    def resend_code(self, request):
+        serializer=self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        user=serializer.validated_data['user']
+        existing=EmailVerificationCode.objects.filter(user=user).first()
+        if existing:
+            time_diff=timezone.now()- existing.created_at
+            if time_diff<timedelta(minutes=1):
+                wait_seconds=60 -int(time_diff.total_seconds())
+                return Response({'detail': f'please wait {wait_seconds} seconds before requesting a new code.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        self.send_verification_code(user)
+        return Response({'detail': 'Verification code resend successfully'})
+    
+    @action(detail=False, methods=['post'], url_path='confirm_code', serializer_class=EmailCodeConfirmSerializer)
+    def confirm_code(self, request):
+        serializer= self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user=serializer.validated_data['user']
+            user.is_active=True
+            user.save()
+            return Response({'message': 'მომხმარებელი წარმატებით გააქტიურდა'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileViewSet(mixins.RetrieveModelMixin,
                       mixins.UpdateModelMixin,
