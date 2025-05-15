@@ -10,6 +10,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 @shared_task
-def debug_task(x,y):
-    return x+y
+def max_of_two(a, b):
+    return max(a, b)
+
 

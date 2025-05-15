@@ -160,6 +160,16 @@ PASSWORD_HASHERS=[
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
 SWAGGER_SETTINGS={
     'USE_SESSION_AUTH':False,
     'SECURITY_DEFINITIONS':{
@@ -174,8 +184,8 @@ SWAGGER_SETTINGS={
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(minutes=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(minutes=10),
 }
 
 import os 
@@ -194,3 +204,5 @@ DEFAULT_FROM_EMAIL=EMAIL_HOST_USER
 
 CELERY_BROKER_URL='redis://localhost:6379/0'
 CELERY_RESULT_BACKEND='redis://localhost:6379/0'
+
+

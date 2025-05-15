@@ -19,6 +19,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
 from datetime import timedelta
+from users.tasks import send_email_async
+from config.celery import app
 class UserViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset=User.objects.all()
     permission_classes=[IsAuthenticated]
@@ -45,8 +47,8 @@ class RegisterView(CreateModelMixin, GenericViewSet):
         )
         subject='Your verification code'
         message=f'Hello {user.username}, your verification code is {code} '
-        send_mail(subject, message, 'no-reply@example.com', [user.email])
-
+        # send_mail(subject, message, 'no-reply@example.com', [user.email])
+        app.send_task('users.tasks.send_email_async',args=[subject, message, user.email] )
     @action(detail=False, methods=['post'], url_path='resend_code', serializer_class=EmailCodeResendSerializer)
     def resend_code(self, request):
         serializer=self.serializer_class(data=request.data)
@@ -115,13 +117,18 @@ class PasswordResetViewSet(CreateModelMixin, GenericViewSet):
 )
             
             
-            send_mail(
-                'პაროლის აღდგენა',
-                f'დააჭირეთ ლინკს რეგისტრაციისთვის {reset_url}',
-                'example@gmail.com',
-                [user.email],
-                fail_silently = False
-            )
+            # send_mail(
+            #     'პაროლის აღდგენა',
+            #     f'დააჭირეთ ლინკს რეგისტრაციისთვის {reset_url}',
+            #     'example@gmail.com',
+            #     [user.email],
+            #     fail_silently = False
+            # )
+
+            
+            subject='პაროლის აღდგენა'
+            message= f'დააჭირეთ ლინკს რეგისტრაციისთვის {reset_url}'
+            app.send_task('users.tasks.send_email_async',args=[subject, message, user.email] )
             
             return Response({'message': 'გაიგზავნა'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
