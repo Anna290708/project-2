@@ -1,0 +1,6 @@
+.env
+env
+.gitignore
+.git
+media
+db.sqlite3

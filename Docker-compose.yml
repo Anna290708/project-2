@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: . 
+      dockerfile: Dockerfile  
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./media:/app/media
+    depends_on:
+      - redis
+    networks:
+      - app_network
+  
+  redis:
+    image: redis:latest 
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data 
+    networks:
+      - app_network
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: Admin
+      POSTGRES_PASSWORD: adminadmin
+      POSTGRES_DB: db.sqlite3
+    volumes:
+      - postgres_data:/var/lib/postgresql@16/data
+      - ./init:/docker-entrypoint-initdb.d/
+    ports:
+      - "5432:5432"
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
