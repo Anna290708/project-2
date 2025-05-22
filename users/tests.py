@@ -119,7 +119,18 @@ class AuthenticationTest(TestCase):
             password='password123',
         )
     
-    def test_unsucessful_token(self):
+    def test_login_valid_credentials(self):
+        data={
+            'email':'test1234@gmail.com',
+            'password':'password12344',
+        }
+        
+        response=self.client.post(self.login_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+
+    def test_login_invalid_credentials(self):
         data={
             'email':'test1234@gmail.com',
             'password':'password12344',
@@ -127,8 +138,23 @@ class AuthenticationTest(TestCase):
         
         response=self.client.post(self.login_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.user.refresh_from_db()
-        self.assertFalse(self.user_detail_url)
+    
+    def test_access_protected_resource(self):
+        login_data={
+            'email':'test1234@gmail.com',
+            'password':'password12344',
+        }
+        login_response=self.client.post(self.login_url, login_data, format='json')
+        token=login_response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        response=self.client.get(self.user_detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_access_protected_resource_without_auth(self):
+        response=self.client.get(self.user_detail_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        
+
 
 
 
